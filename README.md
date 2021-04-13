@@ -11,3 +11,6 @@ https://towardsdatascience.com/how-do-neural-style-transfers-work-b76de101eb3
 
 Download and install anaconda 
 https://www.anaconda.com/products/individual#Downloads
+
+Install pytorch 
+https://pytorch.org/get-started/locally/
