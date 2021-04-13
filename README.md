@@ -14,3 +14,10 @@ https://www.anaconda.com/products/individual#Downloads
 
 Install pytorch 
 https://pytorch.org/get-started/locally/
+
+
+install other requirements 
+
+```
+pip install -r requirements.txt
+```
