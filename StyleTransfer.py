@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # ---
 # jupyter:
 #   jupytext:
@@ -86,3 +87,44 @@ def showtensor(tensor: torch.Tensor) -> None:
     
 showtensor(picasso)
 showtensor(krakow)
+
+# %%
+## pytorch module
+import torch.nn as nn
+import torch.nn.functional as F
+
+# Ltotal(~p,~a,~x) =αLcontent(~p,~x) +βLstyle(~a,~x)
+
+class ContentLoss(nn.Module):
+    
+    def __init__(self, p: torch.Tensor):
+        self.p = p
+        
+    def forward(self, x) -> torch.Tensor:
+        # Lcontent(→p,→x, l) = 1/2 ∑ i,j (Flij − Plij)².
+        # return .5 * sum((x - p)**2)
+        return F.mse_loss(x, self.p)
+
+# t1 = torch.Tensor([2, 2])
+# t2 = torch.Tensor([4, 4])
+# ContentLoss(t1).forward(t2)
+
+def gram(t: torch.Tensor) -> torch.Tensor:
+    a, b, c, d = t.size()
+    g = t.view(a*c, b*d)
+    return g @ g.T / (a*b*c*d)
+    
+gram(picasso)
+
+
+# %%
+class StyleLoss(nn.Module):
+    
+    def __init__(self, p: torch.Tensor):
+        self.p = gram(p)
+        
+    def forward(self, x) -> torch.Tensor:
+        # Lstyle(~a,~x) = ∑ wl E
+        return F.mse_loss(gram(x), self.p)
+    
+StyleLoss(picasso).forward(krakow)
