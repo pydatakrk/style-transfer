@@ -7,6 +7,8 @@ https://www.anaconda.com/products/individual#Downloads
 
 https://towardsdatascience.com/how-do-neural-style-transfers-work-b76de101eb3
 
+https://pytorch.org/tutorials/advanced/neural_style_tutorial.html
+
 # setup 
 
 Download and install anaconda 
