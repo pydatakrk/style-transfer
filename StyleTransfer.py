@@ -109,6 +109,8 @@ class ContentLoss(nn.Module):
 # t2 = torch.Tensor([4, 4])
 # ContentLoss(t1).forward(t2)
 
+
+# %%
 def gram(t: torch.Tensor) -> torch.Tensor:
     a, b, c, d = t.size()
     g = t.view(a*c, b*d)
@@ -116,8 +118,6 @@ def gram(t: torch.Tensor) -> torch.Tensor:
     
 gram(picasso)
 
-
-# %%
 class StyleLoss(nn.Module):
     
     def __init__(self, p: torch.Tensor):
@@ -128,3 +128,44 @@ class StyleLoss(nn.Module):
         return F.mse_loss(gram(x), self.p)
     
 StyleLoss(picasso).forward(krakow)
+
+# %%
+from torchvision.models import vgg19
+
+foo = vgg19(pretrained=True, progress=True)
+network = foo.features.to(device).eval()
+
+
+# %%
+class Normalisation(nn.Module):
+    def __init__(self):
+        self.cnn_normalization_mean = torch.tensor([0.485, 0.456, 0.406]).to(device)
+        self.cnn_normalization_std = torch.tensor([0.229, 0.224, 0.225]).to(device)
+        
+    def forward(self, x):
+        return (x - self.cnn_normlization_mean) / self.cnn_normlization_std
+
+
+# %%
+model = nn.Sequential()
+conv_counter = 0
+for n, x in network.named_children():
+
+        
+    # 4 -> Content
+    # 1,2,3,4,5 -> Style
+    
+    if isinstance(x, nn.ReLU):
+        model.add_module(name=n, module=nn.ReLU(inplace=False))
+    elif isinstance(x, nn.Conv2d):
+        conv_counter += 1
+        print(n, conv_counter)
+        if conv_counter == 4:
+            print("CONTENT")
+        if conv_counter in [1,2,3,4,5]:
+            print("STYLE")
+
+    else:
+        model.add_module(name=n, module=x)
+
+model
