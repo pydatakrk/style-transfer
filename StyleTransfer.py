@@ -14,6 +14,16 @@
 #     name: python3
 # ---
 
+# %% [markdown]
+# # Changelog
+#
+# #### Tue May  4 21:09:45 CEST 2021
+#
+# Finished adding ContentLoss and StyleLoss layers in the model.
+# Thus, we've completed the model \o
+#
+#
+
 # %%
 import numpy as np
 
@@ -98,12 +108,15 @@ import torch.nn.functional as F
 class ContentLoss(nn.Module):
     
     def __init__(self, p: torch.Tensor):
+        nn.Module.__init__(self)
         self.p = p
+        self._mse = None
         
     def forward(self, x) -> torch.Tensor:
         # Lcontent(→p,→x, l) = 1/2 ∑ i,j (Flij − Plij)².
         # return .5 * sum((x - p)**2)
-        return F.mse_loss(x, self.p)
+        self._mse = F.mse_loss(x, self.p)
+        return x
 
 # t1 = torch.Tensor([2, 2])
 # t2 = torch.Tensor([4, 4])
@@ -121,11 +134,14 @@ gram(picasso)
 class StyleLoss(nn.Module):
     
     def __init__(self, p: torch.Tensor):
-        self.p = gram(p)
+        nn.Module.__init__(self)
+        self.p = gram(p).detach()
+        self._mse = None
         
     def forward(self, x) -> torch.Tensor:
         # Lstyle(~a,~x) = ∑ wl E
-        return F.mse_loss(gram(x), self.p)
+        self._mse = F.mse_loss(gram(x), self.p)
+        return x
     
 StyleLoss(picasso).forward(krakow)
 
@@ -149,23 +165,42 @@ class Normalisation(nn.Module):
 # %%
 model = nn.Sequential()
 conv_counter = 0
-for n, x in network.named_children():
-
-        
+style_losses = []
+for n, x in network.named_children():        
     # 4 -> Content
     # 1,2,3,4,5 -> Style
     
     if isinstance(x, nn.ReLU):
         model.add_module(name=n, module=nn.ReLU(inplace=False))
+        
     elif isinstance(x, nn.Conv2d):
         conv_counter += 1
         print(n, conv_counter)
+
+        model.add_module(name=n, module=x)
+        
         if conv_counter == 4:
-            print("CONTENT")
+            # print("CONTENT")
+            p_l  = model(krakow).detach()
+            content_loss = ContentLoss(p_l)
+            model.add_module(name="ContentLoss", module=content_loss)
+            max_content = n
+            
         if conv_counter in [1,2,3,4,5]:
-            print("STYLE")
+            # print("STYLE")
+            a_l  = model(picasso).detach()
+            style_loss = StyleLoss(a_l)
+            model.add_module(name=f"StyleLoss{n}_{conv_counter}", module=style_loss)
+            style_losses.append(style_loss)
+            max_style = n
+            
+            # NOTE: this works because it's bigger than '4' in Content xD
+            if conv_counter == 5:
+                break
 
     else:
         model.add_module(name=n, module=x)
 
 model
+
+# %%
