@@ -17,10 +17,22 @@
 # %% [markdown]
 # # Changelog
 #
-# #### Tue May  4 21:09:45 CEST 2021
+# ## Season 1, Episode 01
+# ...
+#
+# ## Season 1, Episode 02
+# ...
+#
+# ## Season 1, Episode 03
+# ...
+#
+# ## Season 1, Episode 04
+#
+# Tue May  4 21:09:45 CEST 2021
 #
 # Finished adding ContentLoss and StyleLoss layers in the model.
-# Thus, we've completed the model \o
+#
+# Thus, we've completed the model \o/
 #
 #
 
