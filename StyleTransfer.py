@@ -35,6 +35,11 @@
 # Thus, we've completed the model \o/
 #
 #
+# ## Season 1, Episode 05
+#
+# Thu May 20 19:53:52 CEST 2021
+#
+#
 
 # %%
 import numpy as np
@@ -122,12 +127,12 @@ class ContentLoss(nn.Module):
     def __init__(self, p: torch.Tensor):
         nn.Module.__init__(self)
         self.p = p
-        self._mse = None
+        self._loss = None
         
     def forward(self, x) -> torch.Tensor:
         # Lcontent(→p,→x, l) = 1/2 ∑ i,j (Flij − Plij)².
         # return .5 * sum((x - p)**2)
-        self._mse = F.mse_loss(x, self.p)
+        self._loss = F.mse_loss(x, self.p)
         return x
 
 # t1 = torch.Tensor([2, 2])
@@ -148,11 +153,11 @@ class StyleLoss(nn.Module):
     def __init__(self, p: torch.Tensor):
         nn.Module.__init__(self)
         self.p = gram(p).detach()
-        self._mse = None
+        self._loss = None
         
     def forward(self, x) -> torch.Tensor:
         # Lstyle(~a,~x) = ∑ wl E
-        self._mse = F.mse_loss(gram(x), self.p)
+        self._loss = F.mse_loss(gram(x), self.p)
         return x
     
 StyleLoss(picasso).forward(krakow)
@@ -177,15 +182,17 @@ class Normalisation(nn.Module):
 # %%
 model = nn.Sequential()
 conv_counter = 0
-style_losses = []
+style_losses, content_losses = [], []
 for n, x in network.named_children():        
-    # 4 -> Content
-    # 1,2,3,4,5 -> Style
+
     
     if isinstance(x, nn.ReLU):
         model.add_module(name=n, module=nn.ReLU(inplace=False))
         
     elif isinstance(x, nn.Conv2d):
+        # 4 -> Content
+        # 1,2,3,4,5 -> Style
+        
         conv_counter += 1
         print(n, conv_counter)
 
@@ -196,6 +203,7 @@ for n, x in network.named_children():
             p_l  = model(krakow).detach()
             content_loss = ContentLoss(p_l)
             model.add_module(name="ContentLoss", module=content_loss)
+            content_losses.append(content_loss)
             max_content = n
             
         if conv_counter in [1,2,3,4,5]:
@@ -216,3 +224,40 @@ for n, x in network.named_children():
 model
 
 # %%
+krakows = []
+
+
+# %%
+def weighted_sum(styles, contents):
+    style = sum(s._loss for s in styles)
+    content = sum(c._loss for c in contents)
+    
+    return style * 10e6 + content * 1
+
+
+# w = weighted_sum(style_losses, content_losses)
+
+whatever = 10
+
+optimizer = torch.optim.LBFGS([krakow.requires_grad_()])
+optimizer
+
+for _ in range(whatever):
+    
+    def closure():
+        krakow.data.clamp_(0, 1)
+        optimizer.zero_grad()
+        output = model(krakow)
+        loss = weighted_sum(style_losses, content_losses)
+        print(loss)
+        loss.backward()
+        return loss
+    
+    optimizer.step(closure)
+    krakow.data.clamp_(0, 1)
+    
+krakows.append(krakow.clone().detach())
+
+# %%
+for krk in krakows:
+    showtensor(krk)
